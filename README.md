@@ -1,1 +1,1 @@
-# Codenames-LLM
+![Repository banner](media/codenames_banner.jpg)
