@@ -5,7 +5,7 @@ Welcome to the **LLM Codenames Showdown**! This project brings together some of 
 
 ## Overview
 
-Codenames is a word-based party game where players give one-word clues to help their team guess specific words from a grid, avoiding the opposing team's words and a deadly assassin word. In this project, we simulate this game using LLMs like GPT-4, BERT, and other cutting-edge models to evaluate their performance, strategic thinking, and language understanding.
+Codenames is a word-based party game where players give one-word clues to help their team guess specific words from a grid, avoiding the opposing team's words and a deadly assassin word. In this project, we simulate this game using LLMs like GPT-4, LLaMa, and other cutting-edge models to evaluate their performance, strategic thinking, and language understanding.
 
 ## Objectives
 
