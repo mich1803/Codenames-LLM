@@ -12,3 +12,4 @@ Codenames is a word-based party game where players give one-word clues to help t
 - **Build AI Teams**: Develop teams of AI agents using various LLMs.
 - **Performance Evaluation**: Analyze and compare how well these models perform in generating and interpreting clues.
 - **Interactive Play**: Engage these AI teams in head-to-head Codenames matches to observe their gameplay strategies.
+- **Build a competitive team**: Challenge the best AI team with a human teams.
