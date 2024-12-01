@@ -1,2 +1,3 @@
 .env
 codenames_env
+__pycache__
