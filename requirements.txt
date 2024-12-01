@@ -1,0 +1,6 @@
+python-dotenv
+google-generativeai
+openai
+anthropic
+tqdm
+ipython
