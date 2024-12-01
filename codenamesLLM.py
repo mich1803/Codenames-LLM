@@ -765,7 +765,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
           guesser_history.append(f"Team {team} said: {guess}. The word was {x}.")
           history.append(spymaster_history)  # Append spymaster_history
           history.extend(guesser_history)  # Extend with guesser_history
-          return {"endgame": True, "win": team, "reason": "killer word selected", "history": history}
+          return {"endgame": True, "win": opp, "reason": "killer word selected", "history": history}
 
       elif x == team:
           rc[team] -= 1
