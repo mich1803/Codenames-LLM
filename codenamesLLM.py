@@ -15,33 +15,7 @@ from email.mime.multipart import MIMEMultipart
 
 
 
-#LOAD API KEYS
-load_dotenv()
-API_providers = ["GOOGLE", "OPENAI", "XAI", "LLAMA", "ANTHROPIC"]
-API_KEY = {p: os.getenv(f"{p}_key")  for p in API_providers}
-
-
-
-
 """BOARD UTILS FUNCTIONS"""
-
-#DICT WITH PROMPT COLORS
-prompt_colors = {
-    "RED": "\033[1;31m",
-    "BLUE": "\033[1;34m",
-    "endcolor": "\033[0m",
-    "n": "\033[1;33m"
-  }
-
-
-#DICT WITH CARD IMAGES LINK
-neutral_links = [f"https://github.com/mich1803/Codenames-LLM/blob/main/graphics/NEUTRAL{i}.jpg?raw=true" for i in range(1, 5)]
-blue_links = [f"https://github.com/mich1803/Codenames-LLM/blob/main/graphics/BLUE{i}.jpg?raw=true" for i in range(1, 5)]
-red_links = [f"https://github.com/mich1803/Codenames-LLM/blob/main/graphics/RED{i}.jpg?raw=true" for i in range(1, 5)]
-team_links = {"RED": red_links, "BLUE": blue_links}
-killer_link = "https://github.com/mich1803/Codenames-LLM/blob/main/graphics/KILLER.jpg?raw=true"
-neutral_link = "https://github.com/mich1803/Codenames-LLM/blob/main/graphics/neutral.jpg?raw=true"
-
 
 #BOARD GENERATOR
 def generate_board(n = 25, lang = "eng", c = 7, k = 1):
@@ -132,6 +106,15 @@ def create_image_dict(word_color_dict, master = False):
 
   returns a dict that maps each key to his card image
   """
+
+  #DICT WITH CARD IMAGES LINK
+  neutral_links = [f"https://github.com/mich1803/Codenames-LLM/blob/main/graphics/NEUTRAL{i}.jpg?raw=true" for i in range(1, 5)]
+  blue_links = [f"https://github.com/mich1803/Codenames-LLM/blob/main/graphics/BLUE{i}.jpg?raw=true" for i in range(1, 5)]
+  red_links = [f"https://github.com/mich1803/Codenames-LLM/blob/main/graphics/RED{i}.jpg?raw=true" for i in range(1, 5)]
+  team_links = {"RED": red_links, "BLUE": blue_links}
+  killer_link = "https://github.com/mich1803/Codenames-LLM/blob/main/graphics/KILLER.jpg?raw=true"
+  neutral_link = "https://github.com/mich1803/Codenames-LLM/blob/main/graphics/neutral.jpg?raw=true"
+
   image_dict = {}
   if master:
     for word in word_color_dict:
@@ -211,6 +194,10 @@ def call_api(system_prompt, prompt, model, json_mode):
 
   return the output of the api call
   """
+  load_dotenv()
+  API_providers = ["GOOGLE", "OPENAI", "XAI", "LLAMA", "ANTHROPIC"]
+  API_KEY = {p: os.getenv(f"{p}_key")  for p in API_providers}
+
   #OPENAI models:
   if model in ("gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "o1-mini", "o1-preview"): 
     client = OpenAI(api_key=API_KEY["OPENAI"])
@@ -648,6 +635,15 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
 
   """
 
+  #DICT WITH PROMPT COLORS
+  prompt_colors = {
+      "RED": "\033[1;31m",
+      "BLUE": "\033[1;34m",
+      "endcolor": "\033[0m",
+      "n": "\033[1;33m"
+    }
+
+
   opp = "BLUE" if team == "RED" else "RED"
   rc = cards_remaining
   b = board
@@ -830,6 +826,15 @@ def play_game(lang = "eng", n_cards = 25, coloured_cards = 7, k_cards = 1, verbo
     - r (int): The total number of rounds played.
     - history (list): A log of all clues and guesses during the game.
   """
+  #DICT WITH PROMPT COLORS
+  prompt_colors = {
+      "RED": "\033[1;31m",
+      "BLUE": "\033[1;34m",
+      "endcolor": "\033[0m",
+      "n": "\033[1;33m"
+    }
+
+
   r = 1
   turn = "RED"
   board = generate_board(n = n_cards, lang = lang, c = coloured_cards, k = k_cards)
