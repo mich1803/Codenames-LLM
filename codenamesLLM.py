@@ -13,7 +13,48 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-
+def analyze_team_guesses(data, team):
+    total_expected_guesses = 0
+    total_correct_guesses = 0
+    hint_count = 0
+    hint_found = False
+    
+    for line in data:
+        spymaster_phrase = f'Team {team} spymaster said:'
+        guess_phrase = f'Team {team} said:'
+        
+        if line.startswith(spymaster_phrase):
+            # Extract expected guesses for the hint
+            hint_found = True
+            expected_guesses = int(line.split('(')[-1].split(')')[0])
+            total_expected_guesses += expected_guesses
+            hint_count += 1
+            correct_guesses = 0  # Reset correct guesses for the new hint
+        
+        elif hint_found and line.startswith(guess_phrase):
+            # Count correct guesses belonging to the team
+            if f"The word was {team.upper()}." in line:
+                correct_guesses += 1
+        
+        # End hint tracking when another spymaster's hint begins
+        if hint_found and line.startswith("Team") and spymaster_phrase not in line:
+            total_correct_guesses += correct_guesses
+            hint_found = False
+    
+    # Add the final correct guesses after the last hint
+    if hint_found:
+        total_correct_guesses += correct_guesses
+    
+    # Calculate averages
+    avg_expected_guesses = total_expected_guesses / hint_count if hint_count > 0 else 0
+    avg_correct_guesses = total_correct_guesses / hint_count if hint_count > 0 else 0
+    
+    return {
+        "team": team,
+        "average_expected_guesses": avg_expected_guesses,
+        "average_correct_guesses": avg_correct_guesses,
+        "total_hints": hint_count
+    }
 
 """BOARD UTILS FUNCTIONS"""
 
