@@ -6,7 +6,6 @@ from openai import OpenAI
 import anthropic
 import time
 import requests
-from tqdm import tqdm
 import random
 import ast
 from IPython.display import display, HTML
