@@ -647,7 +647,6 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
   opp = "BLUE" if team == "RED" else "RED"
   rc = cards_remaining
   b = board
-  print(history)
   if verbose:
     print("The actual board is: ")
     if masterverbose:
