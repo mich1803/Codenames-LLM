@@ -4,3 +4,5 @@ openai
 anthropic
 ipython
 ipykernel
+pandas
+openpxl
