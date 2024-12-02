@@ -240,7 +240,7 @@ def call_api(system_prompt, prompt, model, json_mode):
   API_KEY = {p: os.getenv(f"{p}_key")  for p in API_providers}
 
   #OPENAI models:
-  if model in ("gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "o1-mini", "o1-preview"): 
+  if model in ("gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "gpt-o1-mini", "gpt-o1-preview"): 
     client = OpenAI(api_key=API_KEY["OPENAI"])
 
     #OPENAI normal mode
