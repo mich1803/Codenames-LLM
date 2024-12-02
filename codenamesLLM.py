@@ -413,7 +413,7 @@ def call_api(system_prompt, prompt, model, json_mode):
       return data
 
 
-  elif model in ("gemini-1.5-flash-latest"):
+  elif model in ("gemini-1.5-flash-latest", "gemini-1.5-pro-latest"):
     genai.configure(api_key=API_KEY["GOOGLE"])
     genmodel = genai.GenerativeModel(model)
     if json_mode:
