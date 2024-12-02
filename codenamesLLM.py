@@ -418,7 +418,7 @@ def call_api(system_prompt, prompt, model, json_mode):
     genmodel = genai.GenerativeModel(model)
     if json_mode:
       while True:
-        time.sleep(4)
+        #time.sleep(4)
         answer = genmodel.generate_content(system_prompt + "This response is going to be read as a python ast literal, format the text as it is. don't start new paragraph etc." + prompt).text
         answer = answer.removeprefix('```json')
         answer = answer.removeprefix('```python')
