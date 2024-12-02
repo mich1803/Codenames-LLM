@@ -697,15 +697,21 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
     print(f"it is {prompt_colors[team]}{team}{prompt_colors['endcolor']} team turn: \n")
 
   if model == "human":
-    clue = input(f"Insert the clue for the {team} team:").upper()
-    number = input(f"Insert the number of words for the {team} team:")
-    spymaster_history = f"Team {team} spymaster said: {clue} ({number})."
-    guesser_history = []
+    
 
-    if clue in b:
-      history.append(spymaster_history)  # Append spymaster_history
-      history.extend(guesser_history)  # Extend with guesser_history
-      return {"endgame": True, "win": team, "reason": "clue in board", "history": history}
+    n_clue_board = 0
+    cib_control = True # Clue in board control variable
+    while cib_control:
+      clue = input(f"Insert the clue for the {team} team:").upper()
+      number = input(f"Insert the number of words for the {team} team:")
+      spymaster_history = f"Team {team} spymaster said: {clue} ({number})."
+      guesser_history = []
+
+      if clue in b:
+        if verbose: print(f"{clue} is in the board, try again. \n \n")
+        n_clue_board += 1
+      else:
+         cib_control = False
 
     for i in range(int(number)):
       guess = input(f"Insert the guess for the {team} team:").upper()
@@ -715,7 +721,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
       except:
           if verbose: print(f"{prompt_colors[team]}{team}{prompt_colors['endcolor']} team guess wasn't on the board. \n \n")
           guesser_history.append(f"Team {team} said: {guess}. The word was not in board")
-          return {"endgame": False, "rc": rc, "b": b, "spyh": spymaster_history, "teamh": guesser_history}
+          return {"endgame": False, "rc": rc, "b": b, "spyh": spymaster_history, "teamh": guesser_history, "cib": n_clue_board}
 
 
       image_dict[guess] = master_image_dict[guess]
@@ -725,7 +731,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
           guesser_history.append(f"Team {team} said: {guess}. The word was {x}.")
           history.append(spymaster_history)  # Append spymaster_history
           history.extend(guesser_history)  # Extend with guesser_history
-          return {"endgame": True, "win": opp, "reason": "killer word selected", "history": history}
+          return {"endgame": True, "win": opp, "reason": "killer word selected", "history": history, "cib": n_clue_board}
 
       elif x == team:
           rc[team] -= 1
@@ -736,7 +742,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
               if verbose: print(f"The {prompt_colors[team]}{team} team{prompt_colors['endcolor']} reached the goal, the game ends. \n \n")
               history.append(spymaster_history)  # Append spymaster_history
               history.extend(guesser_history)  # Extend with guesser_history
-              return {"endgame": True, "win": team, "reason": "cards finished", "history": history}
+              return {"endgame": True, "win": team, "reason": "cards finished", "history": history, "cib": n_clue_board}
 
       elif x == opp:
           rc[opp] -= 1
@@ -747,7 +753,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
               if verbose: print(f"The {prompt_colors[opp]}{opp} team{prompt_colors['endcolor']} reached the goal, the game ends. \n \n")
               history.append(spymaster_history)  # Append spymaster_history
               history.extend(guesser_history)  # Extend with guesser_history
-              return {"endgame": True, "win": team, "reason": "cards finished", "history": history}
+              return {"endgame": True, "win": team, "reason": "cards finished", "history": history, "cib": n_clue_board}
           break
 
       else:
@@ -759,15 +765,19 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
 
 
   else:
-    clue, number = spymaster(lang, board, team, history, model, cot)
-    spymaster_history = f"Team {team} spymaster said: {clue} ({number})."
-    guesser_history = []
-    if verbose: print(f"The {prompt_colors[team]}{team}{prompt_colors['endcolor']} spymaster's clue is: {clue} ({number}). \n \n")
+    n_clue_board = 0
+    cib_control = True # Clue in board control variable
+    while cib_control:
+      clue, number = spymaster(lang, board, team, history, model, cot)
+      spymaster_history = f"Team {team} spymaster said: {clue} ({number})."
+      guesser_history = []
+      if verbose: print(f"The {prompt_colors[team]}{team}{prompt_colors['endcolor']} spymaster's clue is: {clue} ({number}). \n \n")
 
-    if clue in b:
-      history.append(spymaster_history)  # Append spymaster_history
-      history.extend(guesser_history)  # Extend with guesser_history
-      return {"endgame": True, "win": team, "reason": "clue in board", "history": history}
+      if clue in b:
+        if verbose: print(f"{clue} is in the board, try again. \n \n")
+        n_clue_board += 1
+      else:
+         cib_control = False
 
 
     for i in range(number):
@@ -797,7 +807,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
       except:
           if verbose: print(f"{prompt_colors[team]}{team}{prompt_colors['endcolor']} team guess wasn't on the board. \n \n")
           guesser_history.append(f"Team {team} said: {guess}. The word was not in board")
-          return {"endgame": False, "rc": rc, "b": b, "spyh": spymaster_history, "teamh": guesser_history}
+          return {"endgame": False, "rc": rc, "b": b, "spyh": spymaster_history, "teamh": guesser_history, "cib": n_clue_board}
 
       image_dict[guess] = master_image_dict[guess]
       del master_image_dict[guess]
@@ -806,7 +816,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
           guesser_history.append(f"Team {team} said: {guess}. The word was {x}.")
           history.append(spymaster_history)  # Append spymaster_history
           history.extend(guesser_history)  # Extend with guesser_history
-          return {"endgame": True, "win": opp, "reason": "killer word selected", "history": history}
+          return {"endgame": True, "win": opp, "reason": "killer word selected", "history": history, "cib": n_clue_board}
 
       elif x == team:
           rc[team] -= 1
@@ -817,7 +827,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
               if verbose: print(f"The {prompt_colors[team]}{team} team{prompt_colors['endcolor']} reached the goal, the game ends. \n \n")
               history.append(spymaster_history)  # Append spymaster_history
               history.extend(guesser_history)  # Extend with guesser_history
-              return {"endgame": True, "win": team, "reason": "cards finished", "history": history}
+              return {"endgame": True, "win": team, "reason": "cards finished", "history": history, "cib": n_clue_board}
 
       elif x == opp:
           rc[opp] -= 1
@@ -828,7 +838,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
               if verbose: print(f"The {prompt_colors[opp]}{opp} team{prompt_colors['endcolor']} reached the goal, the game ends. \n \n")
               history.append(spymaster_history)  # Append spymaster_history
               history.extend(guesser_history)  # Extend with guesser_history
-              return {"endgame": True, "win": team, "reason": "cards finished", "history": history}
+              return {"endgame": True, "win": team, "reason": "cards finished", "history": history, "cib": n_clue_board}
           break
 
       else:
@@ -837,7 +847,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
           del b[guess]
           break
 
-  return {"endgame": False, "rc": rc, "b": b, "spyh": spymaster_history, "teamh": guesser_history}
+  return {"endgame": False, "rc": rc, "b": b, "spyh": spymaster_history, "teamh": guesser_history, "cib": n_clue_board}
 
 
 #GAME FUNCTION
@@ -876,6 +886,7 @@ def play_game(lang = "eng", n_cards = 25, coloured_cards = 7, k_cards = 1, verbo
 
 
   r = 1
+  cib = {"RED": 0, "BLUE": 0}
   turn = "RED"
   board = generate_board(n = n_cards, lang = lang, c = coloured_cards, k = k_cards)
   image_dict = create_image_dict(board, master = False)
@@ -927,11 +938,12 @@ def play_game(lang = "eng", n_cards = 25, coloured_cards = 7, k_cards = 1, verbo
                        cot = red_cot if turn == "RED" else blue_cot,
                        verbose = verbose,
                        masterverbose = masterverbose)
+    cib[turn] += result["cib"]
     if result["endgame"]:
       if verbose:
         print(result)
         display(HTML(board4print(initial_board)))
-      return (result["win"], result["reason"], r, history)
+      return (result["win"], result["reason"], r, history, cib["RED"], cib["BLUE"])
     else:
       cards_remaining = result["rc"]
       board = result["b"]
