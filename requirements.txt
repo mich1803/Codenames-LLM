@@ -5,4 +5,4 @@ anthropic
 ipython
 ipykernel
 pandas
-openpxl
+openpyxl
