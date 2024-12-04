@@ -239,6 +239,7 @@ def call_api(system_prompt, prompt, model, json_mode):
   API_providers = ["GOOGLE", "OPENAI", "XAI", "LLAMA", "ANTHROPIC"]
   API_KEY = {p: os.getenv(f"{p}_key")  for p in API_providers}
 
+
   #OPENAI models:
   if model in ("gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "gpt-o1-mini", "gpt-o1-preview"): 
     client = OpenAI(api_key=API_KEY["OPENAI"])
@@ -549,6 +550,41 @@ def guesser(lang, team, board, clue, n_guessers, i_agent, cards_remaining, idea,
   return response["M"], bool(response["W"]), response["V"]
 
 
+def solo_guesser(lang, team, board, clue, cards_remaining, k, history, model, cot):
+  """
+  inputs:
+    ...
+
+  return vote
+  """
+  opp = "BLUE" if team == "RED" else "RED"
+  json_mode = True
+  sys_prompt = "We are playing the board game CODENAMES, and your role" + \
+              f"will be the guesser." +\
+              f"Your objective as a team is to guess" +\
+              f"the words of your color based on the clue of your spymaster \n" +\
+              f"There are: {cards_remaining[team]} words for your team, "+\
+              f"{cards_remaining[opp]} words for the enemy team and {k} killer cards." + \
+              f"Even if the number said by the spymaster is more than one, let's guess one word at a time. \n" +\
+              f"You are in team {team}." +\
+              f"You are a very good JSON file writer."
+  if cot:
+    cot_adding = f"You need to give in output a PYTHON JSON DICT OBJECT with 2 keys:\n" +\
+              f"T: your your inner thought (think out loud and break the solution in subproblems); \n" +\
+              f"W: the word you are going to guess."
+  else:
+    cot_adding = f"You need to give in output a PYTHON JSON DICT OBJECT with 1 key:\n" +\
+              f"W: the word you are going to guess."
+
+  prompt = f"The board is {board4prompt(board)}. \n" +\
+          f"The history is {history}. \n" +\
+          f"The clue is: {clue}. \n"
+
+  response = call_api(sys_prompt + cot_adding, prompt, model, json_mode)
+  #print(response["W"])
+  return response["V"]
+
+
 #GUESSER PROMPTS to API CALL
 def guesser_ideas(lang, team, board, clue, n_guessers, i_agent, cards_remaining, k, history,  model = "gpt-4o-mini"):
   """
@@ -639,7 +675,7 @@ def send_email(recipient_email, html_board):
         print(f"Error sending email: {e}")
 
 #TURN FUNCTION
-def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_dict, master_image_dict, model, cot, verbose = False, masterverbose = False):
+def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_dict, master_image_dict, model, cot, cot_guesser, verbose = False, masterverbose = False):
   """
   Simulates a turn for a team in a word-based guessing game.
 
@@ -785,22 +821,27 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
       votes = [{} for _ in range(n_guessers)]
       want_to_talk = [True for _ in range(n_guessers)]
       conv = []
-      for j in range(n_guessers):
-        ideas.append(guesser_ideas(lang, team, board, clue, n_guessers, j, cards_remaining, k, history,  model))
-        if verbose: print(f"Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} guesser {j} thinks: {ideas[j]}.")
-        conv.append(f"Team {team} guesser {j} said: {ideas[j]}.")
-      speaktoomuch = 0
-      while (any(want_to_talk)) and speaktoomuch < 2:
-        if verbose: print(f"Do you want to talk? {want_to_talk}")
-        for j in range(n_guessers):
-          if want_to_talk[j]:
-            mess, want_to_talk[j], votes[j] = guesser(lang, team, board, clue, n_guessers, j, cards_remaining, ideas[j], k, history, conv, model)
-            if verbose: print(f"Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} guesser {j} said: {mess}.")
-            conv.append(f"Team {team} guesser {j} said: {mess}.")
-        speaktoomuch += 1
-      guess = vote_system(votes)
-      if verbose: print(f"{prompt_colors['n']}NARRATOR{prompt_colors['endcolor']}: Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} voted: {guess}. \n \n")
 
+      if n_guessers > 1:
+        for j in range(n_guessers):
+          ideas.append(guesser_ideas(lang, team, board, clue, n_guessers, j, cards_remaining, k, history,  model))
+          if verbose: print(f"Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} guesser {j} thinks: {ideas[j]}.")
+          conv.append(f"Team {team} guesser {j} said: {ideas[j]}.")
+        speaktoomuch = 0
+        while (any(want_to_talk)) and speaktoomuch < 2:
+          if verbose: print(f"Do you want to talk? {want_to_talk}")
+          for j in range(n_guessers):
+            if want_to_talk[j]:
+              mess, want_to_talk[j], votes[j] = guesser(lang, team, board, clue, n_guessers, j, cards_remaining, ideas[j], k, history, conv, model)
+              if verbose: print(f"Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} guesser {j} said: {mess}.")
+              conv.append(f"Team {team} guesser {j} said: {mess}.")
+          speaktoomuch += 1
+        guess = vote_system(votes)
+        if verbose: print(f"{prompt_colors['n']}NARRATOR{prompt_colors['endcolor']}: Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} voted: {guess}. \n \n")
+    
+      elif n_guessers == 1:
+          guess = solo_guesser(lang, team, board, clue, cards_remaining, history, cot_guesser, model)
+        
 
       try:
           x = b[guess]
@@ -851,7 +892,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
 
 
 #GAME FUNCTION
-def play_game(lang = "eng", n_cards = 25, coloured_cards = 7, k_cards = 1, verbose = False, red_model = "gpt-4o-mini", red_cot = True, blue_model = "gpt-4o-mini", blue_cot = True, red_agents = 3, blue_agents = 3, masterverbose = False):
+def play_game(lang = "eng", n_cards = 25, coloured_cards = 7, k_cards = 1, verbose = False, red_model = "gpt-4o-mini", red_cot = True, red_cot_guesser = False, blue_model = "gpt-4o-mini", blue_cot = True, blue_cot_guesser = False, red_agents = 3, blue_agents = 3, masterverbose = False):
   """
   Simulates a full game of a word-based guessing game, alternating turns between two teams until a winning condition is met.
 
@@ -863,8 +904,10 @@ def play_game(lang = "eng", n_cards = 25, coloured_cards = 7, k_cards = 1, verbo
     - verbose (bool): If True, displays detailed game status and parameters (default: False).
     - red_model (str): The model used by the RED team spymaster ("human" or AI model name, default: "gpt-4o-mini").
     - red_cot (bool): Enables chain-of-thought reasoning for the RED team model (default: True).
+    - red_cot_guesser (bool): Enables chain-of-thought reasoning for the RED guessers (if 1) (default: False).
     - blue_model (str): The model used by the BLUE team spymaster ("human" or AI model name, default: "gpt-4o-mini").
     - blue_cot (bool): Enables chain-of-thought reasoning for the BLUE team model (default: True).
+    - blue_cot_guesser (bool): Enables chain-of-thought reasoning for the BLUE guessers (if 1) (default: False).
     - red_agents (int): Number of guessing agents for the RED team (default: 3).
     - blue_agents (int): Number of guessing agents for the BLUE team (default: 3).
     - masterverbose (bool): If True, displays the complete board for spymasters during the game (default: False).
@@ -936,6 +979,7 @@ def play_game(lang = "eng", n_cards = 25, coloured_cards = 7, k_cards = 1, verbo
                        master_image_dict = master_image_dict,
                        model = red_model if turn == "RED" else blue_model,
                        cot = red_cot if turn == "RED" else blue_cot,
+                       cot_guesser = red_cot_guesser if turn == "RED" else blue_cot_guesser,
                        verbose = verbose,
                        masterverbose = masterverbose)
     cib[turn] += result["cib"]
