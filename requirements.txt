@@ -6,3 +6,4 @@ ipython
 ipykernel
 pandas
 openpyxl
+xlsxwriter
