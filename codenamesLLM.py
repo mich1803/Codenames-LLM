@@ -582,7 +582,7 @@ def solo_guesser(lang, team, board, clue, cards_remaining, k, history, model, co
 
   response = call_api(sys_prompt + cot_adding, prompt, model, json_mode)
   #print(response["W"])
-  return response["V"]
+  return response["W"]
 
 
 #GUESSER PROMPTS to API CALL
