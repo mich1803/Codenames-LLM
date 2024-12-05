@@ -779,7 +779,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
         if verbose: print(f"{prompt_colors['n']}NARRATOR{prompt_colors['endcolor']}: Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} voted: {guess}. \n \n")
     
       elif n_guessers == 1:
-          guess = solo_guesser(lang, team, board, clue, cards_remaining, history, cot_guesser, guesser_model)
+          guess = solo_guesser(lang, team, board, clue, cards_remaining, k, history, guesser_model, cot_guesser)
       
 
     try:
