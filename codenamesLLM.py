@@ -581,8 +581,9 @@ def solo_guesser(lang, team, board, clue, cards_remaining, k, history, model, co
           f"The clue is: {clue}. \n"
 
   response = call_api(sys_prompt + cot_adding, prompt, model, json_mode)
+  T = response["T"] if cot else ""
   #print(response["W"])
-  return response["W"]
+  return T, response["W"]
 
 
 #GUESSER PROMPTS to API CALL
@@ -752,7 +753,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
         cib_control = False
 
 
-  for i in range(number):
+  for _ in range(number):
     if guesser_model == "model":
       guess = input("Take your guess")
     else:
@@ -779,8 +780,9 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
         if verbose: print(f"{prompt_colors['n']}NARRATOR{prompt_colors['endcolor']}: Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} voted: {guess}. \n \n")
     
       elif n_guessers == 1:
-          guess = solo_guesser(lang, team, board, clue, cards_remaining, k, history, guesser_model, cot_guesser)
-          if verbose: print(f"{prompt_colors[team]}{team} GUESSER{prompt_colors['endcolor']}: {guess}. \n \n")
+          T, guess = solo_guesser(lang, team, board, clue, cards_remaining, k, history, guesser_model, cot_guesser)
+          if cot_guesser and verbose: print(f"{prompt_colors[team]}{team} GUESSER{prompt_colors['endcolor']}: {T}. \n \n")
+          if verbose: print(f"{prompt_colors[team]}{team} GUESSER{prompt_colors['endcolor']}'s guess: {guess}. \n \n")
       
 
     try:
