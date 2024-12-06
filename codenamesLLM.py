@@ -239,166 +239,68 @@ def call_api(system_prompt, prompt, model, json_mode):
   API_providers = ["GOOGLE", "OPENAI", "XAI", "LLAMA", "ANTHROPIC"]
   API_KEY = {p: os.getenv(f"{p}_key")  for p in API_providers}
 
+  for timeout_count in range(5):
 
-  #OPENAI models:
-  if model in ("gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "gpt-o1-mini", "gpt-o1-preview"): 
-    client = OpenAI(api_key=API_KEY["OPENAI"])
+    #OPENAI models:
+    if model in ("gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "gpt-o1-mini", "gpt-o1-preview"): 
+      client = OpenAI(api_key=API_KEY["OPENAI"])
 
-    #OPENAI normal mode
-    if not json_mode:
-      chat_completion = client.chat.completions.create(
-            model=model,
-            messages=[
-                      {"role": "system", "content": system_prompt},
-                      {"role": "user", "content": prompt}
-                      ]
-        )
-      return chat_completion.choices[0].message.content
+      #OPENAI normal mode
+      if not json_mode:
+        chat_completion = client.chat.completions.create(
+              model=model,
+              messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                        ]
+          )
+        return chat_completion.choices[0].message.content
 
-    #OPENAI json mode
-    if json_mode:
-      chat_completion = client.chat.completions.create(
-        model=model,
-        response_format={ "type": "json_object" },
-        messages=[
-                  {"role": "system", "content": system_prompt},
-                  {"role": "user", "content": prompt}
-                  ]
-        )
-      answer = chat_completion.choices[0].message.content
-      try:
-        data = ast.literal_eval(answer)
-
-      except (SyntaxError, ValueError) as e:
-        # Catch specific errors and provide more context in the error message
-        print(f"Error parsing API response: {e}")
-        print(f"Response content: {answer}")
-        raise ValueError("Format error: The API response is not a valid Python literal.") from e  # Chain exceptions for better debugging
-      return data
-
-
-  #XAI models
-  elif model in ("grok-beta"):
-    client = OpenAI(api_key=API_KEY["XAI"], base_url="https://api.x.ai/v1")
-
-    #XAI normal mode
-    if not json_mode:
-      chat_completion = client.chat.completions.create(
-            model=model,
-            messages=[
-                      {"role": "system", "content": system_prompt + 'Dont format the code, GIVE ONLY THE RAW DICT'},
-                      {"role": "user", "content": prompt}
-                      ]
-        )
-      return chat_completion.choices[0].message.content
-
-    #XAI json mode
-    if json_mode:
-      chat_completion = client.chat.completions.create(
-        model=model,
-        messages=[
-                  {"role": "system", "content": system_prompt},
-                  {"role": "user", "content": prompt}
-                  ]
-        )
-      answer = chat_completion.choices[0].message.content
-      answer = answer.removeprefix('```json')
-      answer = answer.removeprefix('```python')
-      answer = answer.removesuffix('```')
-      try:
-        data = ast.literal_eval(answer)
-
-      except (SyntaxError, ValueError) as e:
-        # Catch specific errors and provide more context in the error message
-        print(f"Error parsing API response: {e}")
-        print(f"Response content: {answer}")
-        raise ValueError("Format error: The API response is not a valid Python literal.") from e  # Chain exceptions for better debugging
-      return data
-
-
-  #ANTHROPIC models
-  elif model in ("claude-3-5-sonnet-latest", "claude-3-5-haiku-latest"):
-    client = anthropic.Anthropic(api_key=API_KEY["ANTHROPIC"])
-
-    #ANTHROPIC json mode
-    if json_mode:
-      message = client.messages.create(
-          model=model,
-          max_tokens=1000,
-          system=system_prompt + "This response is going to be read as a python ast literal, format the text as it is. don't start new paragraph etc.",
-          messages=[
-              {
-                  "role": "user",
-                  "content": [
-                      {
-                          "type": "text",
-                          "text": prompt
-                      }
-                  ]
-              }
-          ]
-      )
-      answer = message.content[0].text
-      answer = answer.removeprefix('```json')
-      answer = answer.removeprefix('```python')
-      answer = answer.removesuffix('```')
-      try:
-        data = ast.literal_eval(answer)
-
-      except (SyntaxError, ValueError) as e:
-        # Catch specific errors and provide more context in the error message
-        print(f"Error parsing API response: {e}")
-        print(f"Response content: {answer}")
-        raise ValueError("Format error: The API response is not a valid Python literal.") from e  # Chain exceptions for better debugging
-      return data
-
-    #ANTHROPIC normal mode
-    else:
-      message = client.messages.create(
-          model=model,
-          max_tokens=1500,
-          system=system_prompt,
-          messages=[
-              {
-                  "role": "user",
-                  "content": [
-                      {
-                          "type": "text",
-                          "text": prompt
-                      }
-                  ]
-              }
-          ]
-      )
-      return message.content[0].text
-
-
-  #LLAMA API MODELS
-  elif model in ("llama3.2-1b", "llama3.2-11b-vision", "llama3.2-90b-vision"):
-    client = OpenAI(api_key=API_KEY["LLAMA"], base_url="https://api.llama-api.com")
-
-    #LLAMA normal mode
-    if not json_mode:
-      chat_completion = client.chat.completions.create(
-            model=model,
-            messages=[
-                      {"role": "system", "content": system_prompt},
-                      {"role": "user", "content": prompt}
-                      ]
-        )
-      return chat_completion.choices[0].message.content
-
-    #LLAMA json mode
-    if json_mode:
-      while True:
-        dict_request = "GIVE THE ANSWER AS A DICTIONARY \n example: \n {'thought': 'insert your thought', 'clue':'insert your clue', 'number':'insert the number'}" +\
-        "or with the other keys that I asked you. This response is going to be read as a python literal."
+      #OPENAI json mode
+      if json_mode:
         chat_completion = client.chat.completions.create(
           model=model,
           response_format={ "type": "json_object" },
-          max_tokens=1500,
           messages=[
-                    {"role": "system", "content": system_prompt + dict_request},
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                    ]
+          )
+        answer = chat_completion.choices[0].message.content
+        try:
+          data = ast.literal_eval(answer)
+          return data
+        except (SyntaxError, ValueError) as e:
+          # Catch specific errors and provide more context in the error message
+          #print(f"Error parsing API response: {e}")
+          #print(f"Response content: {answer}")
+          print(".")
+          #raise ValueError("Format error: The API response is not a valid Python literal.") from e  # Chain exceptions for better debugging
+          pass
+        
+
+
+    #XAI models
+    elif model in ("grok-beta"):
+      client = OpenAI(api_key=API_KEY["XAI"], base_url="https://api.x.ai/v1")
+
+      #XAI normal mode
+      if not json_mode:
+        chat_completion = client.chat.completions.create(
+              model=model,
+              messages=[
+                        {"role": "system", "content": system_prompt + 'Dont format the code, GIVE ONLY THE RAW DICT'},
+                        {"role": "user", "content": prompt}
+                        ]
+          )
+        return chat_completion.choices[0].message.content
+
+      #XAI json mode
+      if json_mode:
+        chat_completion = client.chat.completions.create(
+          model=model,
+          messages=[
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                     ]
           )
@@ -408,38 +310,143 @@ def call_api(system_prompt, prompt, model, json_mode):
         answer = answer.removesuffix('```')
         try:
           data = ast.literal_eval(answer)
-          break
+          return data
+
         except (SyntaxError, ValueError) as e:
+          # Catch specific errors and provide more context in the error message
+          #print(f"Error parsing API response: {e}")
+          #print(f"Response content: {answer}")
+          print(".")
+          #raise ValueError("Format error: The API response is not a valid Python literal.") from e  # Chain exceptions for better debugging
           pass
-      return data
+        
 
 
-  elif model in ("gemini-1.5-flash-latest", "gemini-1.5-pro-latest"):
-    genai.configure(api_key=API_KEY["GOOGLE"])
-    genmodel = genai.GenerativeModel(model)
-    if json_mode:
-      while True:
-        #time.sleep(4)
-        answer = genmodel.generate_content(system_prompt + "This response is going to be read as a python ast literal, format the text as it is. don't start new paragraph etc." + prompt).text
+    #ANTHROPIC models
+    elif model in ("claude-3-5-sonnet-latest", "claude-3-5-haiku-latest"):
+      client = anthropic.Anthropic(api_key=API_KEY["ANTHROPIC"])
+
+      #ANTHROPIC json mode
+      if json_mode:
+        message = client.messages.create(
+            model=model,
+            max_tokens=1000,
+            system=system_prompt + "This response is going to be read as a python ast literal, format the text as it is. don't start new paragraph etc.",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        )
+        answer = message.content[0].text
         answer = answer.removeprefix('```json')
         answer = answer.removeprefix('```python')
-        answer = answer[:-1]
-        for u in range(3):
-          answer = answer.removesuffix('`')
+        answer = answer.removesuffix('```')
         try:
           data = ast.literal_eval(answer)
-          break
+          return data
 
-        except:
+        except (SyntaxError, ValueError) as e:
+          # Catch specific errors and provide more context in the error message
+          #print(f"Error parsing API response: {e}")
+          #print(f"Response content: {answer}")
+          print(".")
+          #raise ValueError("Format error: The API response is not a valid Python literal.") from e  # Chain exceptions for better debugging
           pass
+        
 
-      return data
+      #ANTHROPIC normal mode
+      else:
+        message = client.messages.create(
+            model=model,
+            max_tokens=1500,
+            system=system_prompt,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        )
+        return message.content[0].text
+
+
+    #LLAMA API MODELS
+    elif model in ("llama3.2-1b", "llama3.2-11b-vision", "llama3.2-90b-vision"):
+      client = OpenAI(api_key=API_KEY["LLAMA"], base_url="https://api.llama-api.com")
+
+      #LLAMA normal mode
+      if not json_mode:
+        chat_completion = client.chat.completions.create(
+              model=model,
+              messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                        ]
+          )
+        return chat_completion.choices[0].message.content
+
+      #LLAMA json mode
+      if json_mode:
+          dict_request = "GIVE THE ANSWER AS A DICTIONARY \n example: \n {'thought': 'insert your thought', 'clue':'insert your clue', 'number':'insert the number'}" +\
+          "or with the other keys that I asked you. This response is going to be read as a python literal."
+          chat_completion = client.chat.completions.create(
+            model=model,
+            response_format={ "type": "json_object" },
+            max_tokens=1500,
+            messages=[
+                      {"role": "system", "content": system_prompt + dict_request},
+                      {"role": "user", "content": prompt}
+                      ]
+            )
+          answer = chat_completion.choices[0].message.content
+          answer = answer.removeprefix('```json')
+          answer = answer.removeprefix('```python')
+          answer = answer.removesuffix('```')
+          try:
+            data = ast.literal_eval(answer)
+            return data
+          except (SyntaxError, ValueError) as e:
+            print(".")
+            pass
+          
+
+
+    elif model in ("gemini-1.5-flash-latest", "gemini-1.5-pro-latest"):
+      genai.configure(api_key=API_KEY["GOOGLE"])
+      genmodel = genai.GenerativeModel(model)
+      if json_mode:
+          answer = genmodel.generate_content(system_prompt + "This response is going to be read as a python ast literal, format the text as it is. don't start new paragraph etc." + prompt).text
+          answer = answer.removeprefix('```json')
+          answer = answer.removeprefix('```python')
+          answer = answer[:-1]
+          for u in range(3):
+            answer = answer.removesuffix('`')
+          try:
+            data = ast.literal_eval(answer)
+            return data
+          except:
+              print(".")
+              pass
+      else:
+        answer = genmodel.generate_content(system_prompt + prompt).text
+        return answer
+
     else:
-      answer = genmodel.generate_content(system_prompt + prompt).text
-      return answer
-
-  else:
-    raise Exception("ERROR: wrong model name")
+      raise Exception("ERROR: wrong model name")
+    
+  raise Exception("Timeout: too many API response gone wrong.")
 
 
 #SPYMASTER PROMPTS to API CALL
@@ -494,9 +501,10 @@ def spymaster(lang, board, team, history, model, cot):
       f"- which are the words of your team ({team}) and which word can I say that aligns with them;" +\
       "- which are the words the you are better to avoid make your team think, like the ones of the opponents' team or the killer one." +\
       "at the end double check that your clue is not in the board to avoid losing instantly.".upper() +\
-      "BE EXTREMELY SURE THAT THE DICT KEYS ARE RIGHT (thought, clue, number)."
+      "BE EXTREMELY SURE THAT THE DICT KEYS ARE RIGHT ('thought', 'clue', 'number')."
 
   sys_prompt += adding_cot
+  sys_prompt += "Use quotes only to delimit strings, do not use it inside of them as it might break the ast python recognition"
 
   prompt = f"The board is {board4prompt(board, master = True)}, The history of the game is: {history}."
 
@@ -536,9 +544,11 @@ def guesser(lang, team, board, clue, n_guessers, i_agent, cards_remaining, idea,
               f"Your inital thoughts were: {idea} \n" +\
               f"You are a very good JSON file writer." +\
               f"You need to give in output a PYTHON JSON DICT OBJECT with 3 keys:\n" +\
-              f"M: your message to other teammates (be short and coincise); \n" +\
-              f"W: a bool that is 1 if you want to listen and speak to the others again, 0 if you feel like you wouldn't add anything to the conversation (*if you all agree please say 0*); \n" +\
-              f"V: a dictionary that maps each word in the board to a real number in iterval (-10,10) that represents your confidence in guessing that word (don't be afraid of writing decimal numbers)."
+              f"'M': your message to other teammates (be short and coincise); \n" +\
+              f"'W': a bool that is 1 if you want to listen and speak to the others again, 0 if you feel like you wouldn't add anything to the conversation (*if you all agree please say 0*); \n" +\
+              f"'V': a dictionary that maps each word in the board to a real number in iterval (-10,10) that represents your confidence in guessing that word (don't be afraid of writing decimal numbers)."
+  
+  sys_prompt += "Use quotes only to delimit strings, do not use it inside of them as it might break the ast python recognition" 
 
   prompt = f"The board is {board4prompt(board)}. \n" +\
           f"The history is {history}. \n" +\
@@ -570,11 +580,13 @@ def solo_guesser(lang, team, board, clue, cards_remaining, k, history, model, co
               f"You are a very good JSON file writer."
   if cot:
     cot_adding = f"You need to give in output a PYTHON JSON DICT OBJECT with 2 keys:\n" +\
-              f"T: your your inner thought (think out loud and break the solution in subproblems); \n" +\
-              f"W: the word you are going to guess."
+              f"'T': your your inner thought (think out loud and break the solution in subproblems); \n" +\
+              f"'W': the word you are going to guess."
   else:
     cot_adding = f"You need to give in output a PYTHON JSON DICT OBJECT with 1 key:\n" +\
-              f"W: the word you are going to guess."
+              f"'W': the word you are going to guess."
+    
+  sys_prompt += "Use quotes only to delimit strings, do not use it inside of them as it might break the ast python recognition"
 
   prompt = f"The board is {board4prompt(board)}. \n" +\
           f"The history is {history}. \n" +\
