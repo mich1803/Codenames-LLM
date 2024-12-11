@@ -487,20 +487,22 @@ def spymaster(lang, board, team, history, model, cot):
       "6. Consider the current state of the game: If there are few words left, give more specific clues. If there are many words left, "+ \
       "give broader clues that point to multiple words."+ \
       "7. Always prioritize safety. If a clue could be interpreted in a way that risks your team guessing incorrectly, choose a safer clue."+ \
-      "After you choose the clue, double-check if it’s not in the board and strategically helpful for your team.".upper()
-)
-
-  if not cot:
-    adding_cot = "YOUR RESPONSE SHOULD BE A JSON PYTHON DICT OBJECT WITH TWO KEYS: 'clue' and 'number'. Make sure the clue is a single word, and the number "+ \
-      "is an integer between 1 and the number of words left on the board related to that clue."
-  else:
-    adding_cot = "YOUR RESPONSE SHOULD BE A JSON PYTHON DICT OBJECT WITH THREE KEYS: 'thought', 'clue' and 'number'. Make sure the clue is a single word, and the number "+ \
-      "is an integer between 1 and the number of words left on the board related to that clue." +\
-      "In the thought (the fisrt thing you are going to say as a 200 words max test) you need to use reasoning to understand which clue and number to say, divide the problem in subproblem like:" +\
+      "After you choose the clue, double-check if it’s not in the board and strategically helpful for your team.".upper() +\
+      "You need to use reasoning to understand which clue and number to say, divide the problem in subproblem like:" +\
       "- which words i cannot say like the ones in the board (or you lose instantly);" +\
       f"- which are the words of your team ({team}) and which word can I say that aligns with them;" +\
       "- which are the words the you are better to avoid make your team think, like the ones of the opponents' team or the killer one." +\
-      "at the end double check that your clue is not in the board to avoid losing instantly.".upper() +\
+      "at the end double check that your clue is not in the board to avoid losing instantly.".upper()
+      )
+
+  if not cot:
+    adding_cot = "YOUR RESPONSE SHOULD BE A JSON PYTHON DICT OBJECT WITH TWO KEYS: 'clue' and 'number'. Make sure the clue is a single word, and the number "+ \
+      "is an integer between 1 and the number of words left on the board related to that clue."+\
+      "BE EXTREMELY SURE THAT THE DICT KEYS ARE RIGHT ('clue', 'number')."
+  else:
+    adding_cot = "YOUR RESPONSE SHOULD BE A JSON PYTHON DICT OBJECT WITH THREE KEYS: 'thought', 'clue' and 'number'. Make sure the clue is a single word, and the number "+ \
+      "is an integer between 1 and the number of words left on the board related to that clue." +\
+      "In the thought you need to put all of your inner thoghts." +\
       "BE EXTREMELY SURE THAT THE DICT KEYS ARE RIGHT ('thought', 'clue', 'number')."
 
   sys_prompt += adding_cot
@@ -580,7 +582,7 @@ def solo_guesser(lang, team, board, clue, cards_remaining, k, history, model, co
               f"You are a very good JSON file writer."
   if cot:
     cot_adding = f"You need to give in output a PYTHON JSON DICT OBJECT with 2 keys:\n" +\
-              f"'T': your your inner thought (think out loud and break the solution in subproblems); \n" +\
+              f"'T': your inner thought (think out loud and break the solution in subproblems); \n" +\
               f"'W': the word you are going to guess."
   else:
     cot_adding = f"You need to give in output a PYTHON JSON DICT OBJECT with 1 key:\n" +\
