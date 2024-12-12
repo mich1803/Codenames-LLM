@@ -768,7 +768,7 @@ def play_turn(lang, team, board, cards_remaining, k, n_guessers, history, image_
 
 
   for _ in range(number):
-    if guesser_model == "model":
+    if guesser_model == "human":
       guess = input("Take your guess")
     else:
       ideas = []
@@ -958,3 +958,273 @@ def play_game(lang = "eng", n_cards = 25, coloured_cards = 7, k_cards = 1, verbo
       turn = "BLUE" if turn == "RED" else "RED"
       history.append(result["spyh"])
       history += result["teamh"]
+
+
+
+
+def play_game_mixed_guessers(lang = "eng", n_cards = 25, coloured_cards = 7, k_cards = 1, verbose = False, red_master_model = "gpt-4o-mini", red_guesser_model = False, red_cot = True, red_cot_guesser = False, blue_master_model = "gpt-4o-mini", blue_guesser_model = False, blue_cot = True, blue_cot_guesser = False, masterverbose = False):
+  """
+  Simulates a full game of a word-based guessing game, alternating turns between two teams until a winning condition is met.
+
+    Inputs:
+    - lang (str): The language of the game (default: "eng").
+    - n_cards (int): Total number of cards on the board (default: 25).
+    - coloured_cards (int): Number of cards assigned to each team's color (default: 7).
+    - k_cards (int): Number of killer cards on the board (default: 1).
+    - verbose (bool): If True, displays detailed game status and parameters (default: False).
+    - red_model (str): The model used by the RED team spymaster ("human" or AI model name, default: "gpt-4o-mini").
+    - red_cot (bool): Enables chain-of-thought reasoning for the RED team model (default: True).
+    - red_cot_guesser (bool): Enables chain-of-thought reasoning for the RED guessers (if 1) (default: False).
+    - blue_model (str): The model used by the BLUE team spymaster ("human" or AI model name, default: "gpt-4o-mini").
+    - blue_cot (bool): Enables chain-of-thought reasoning for the BLUE team model (default: True).
+    - blue_cot_guesser (bool): Enables chain-of-thought reasoning for the BLUE guessers (if 1) (default: False).
+    - red_agents (int): Number of guessing agents for the RED team (default: 3).
+    - blue_agents (int): Number of guessing agents for the BLUE team (default: 3).
+    - masterverbose (bool): If True, displays the complete board for spymasters during the game (default: False).
+
+    Outputs:
+    Returns a tuple summarizing the game results:
+    - win (str): The winning team ("RED" or "BLUE").
+    - reason (str): The reason for the game's end ("killer word selected", "cards finished").
+    - r (int): The total number of rounds played.
+    - history (list): A log of all clues and guesses during the game.
+  """
+  #DICT WITH PROMPT COLORS
+  prompt_colors = {
+      "RED": "\033[1;31m",
+      "BLUE": "\033[1;34m",
+      "endcolor": "\033[0m",
+      "n": "\033[1;33m"
+    }
+
+
+  if not red_guesser_model: red_guesser_model = [red_master_model for _ in range(3)]
+  if not blue_guesser_model: blue_guesser_model = [blue_master_model for _ in range(3)]
+  r = 1
+  cib = {"RED": 0, "BLUE": 0}
+  turn = "RED"
+  board = generate_board(n = n_cards, lang = lang, c = coloured_cards, k = k_cards)
+  image_dict = create_image_dict(board, master = False)
+  master_image_dict = create_image_dict(board, master = True)
+  initial_board = master_image_dict.copy()
+  cards_remaining = {"RED": coloured_cards + 1, "BLUE": coloured_cards}
+  history = []
+
+  if red_master_model == "human":
+    mail = input("Insert the mail of the red spymaster:")
+    send_email(mail, board4print(master_image_dict))
+  if blue_master_model == "human":
+    mail = input("Insert the mail of the blue spymaster:")
+    send_email(mail, board4print(master_image_dict))
+  #input("stop")
+
+  if verbose:
+      intro = prompt_colors["n"] + "GAME PARAMETERS:" + prompt_colors["endcolor"] + "\n" + \
+      f"language = {lang}, \n" + \
+      f"number of cards = {n_cards}, \n" + \
+      f"number of killer cards = {k_cards}, \n" + \
+      "\n" + \
+      prompt_colors["RED"] + "RED TEAM PARAMETERS:" + prompt_colors["endcolor"] + "\n" + \
+      "Red team starts first, " + \
+      f"number of red cards = {cards_remaining['RED']}, \n" + \
+      f"red spymaster model = {red_master_model}, \n" + \
+      f"red guesser model = {red_guesser_model}, \n"  + \
+      "\n" + \
+      prompt_colors["BLUE"] + "BLUE TEAM PARAMETERS:" + prompt_colors["endcolor"] + "\n" + \
+      f"number of blue cards = {cards_remaining['BLUE']}, \n" + \
+      f"blue spymaster model = {blue_master_model}, \n" + \
+      f"blue guesser model = {blue_guesser_model}, \n"
+
+      print("-----------------------------------")
+      print(intro)
+      print("-----------------------------------")
+
+  while True:
+    result = play_turn_mixed_guessers(lang = lang,
+                       team = turn,
+                       board = board,
+                       cards_remaining = cards_remaining,
+                       k = k_cards,
+                       history = history,
+                       image_dict = image_dict,
+                       master_image_dict = master_image_dict,
+                       master_model = red_master_model if turn == "RED" else blue_master_model,
+                       guesser_model = red_guesser_model if turn == "RED" else blue_guesser_model,
+                       cot = red_cot if turn == "RED" else blue_cot,
+                       cot_guesser = red_cot_guesser if turn == "RED" else blue_cot_guesser,
+                       verbose = verbose,
+                       masterverbose = masterverbose)
+    cib[turn] += result["cib"]
+    if result["endgame"]:
+      if verbose:
+        print(result)
+        display(HTML(board4print(initial_board)))
+      return (result["win"], result["reason"], r, history, cib["RED"], cib["BLUE"])
+    else:
+      cards_remaining = result["rc"]
+      board = result["b"]
+      r += 1
+      turn = "BLUE" if turn == "RED" else "RED"
+      history.append(result["spyh"])
+      history += result["teamh"]
+
+
+
+
+def play_turn_mixed_guessers(lang, team, board, cards_remaining, k, history, image_dict, master_image_dict, master_model, guesser_model, cot, cot_guesser, verbose = False, masterverbose = False):
+  """
+  Simulates a turn for a team in a word-based guessing game.
+
+    Inputs:
+    - lang (str): The language of the game (e.g., "EN" for English).
+    - team (str): The team taking the turn ("RED" or "BLUE").
+    - board (dict): The current game board, mapping words to roles ("RED", "BLUE", "NEUTRAL", or "KILLER").
+    - cards_remaining (dict): Remaining words to guess for each team (e.g., {'RED': 5, 'BLUE': 6}).
+    - k (int): Parameter influencing AI decision-making.
+    - n_guessers (int): Number of guessers (if using AI guessers).
+    - history (list): A log of all clues and guesses so far.
+    - image_dict (dict): Maps guessed words to images (for visualization).
+    - master_image_dict (dict): Original image mapping for all board words.
+    - model (str): Mode of play:
+    - "human": Clues and guesses are provided manually.
+    - Other values: AI-controlled gameplay.
+    - cot (bool): Enables chain-of-thought reasoning for AI models.
+    - verbose (bool): If True, prints detailed game status.
+    - masterverbose (bool): If True, displays the full board for the spymaster.
+
+    Outputs:
+    Returns a dictionary summarizing the turn outcome:
+        If the game ends:
+        - "endgame" (bool): True.
+        - "win" (str): The winning team ("RED" or "BLUE").
+        - "reason" (str): Why the game ended ("killer word selected", "cards finished").
+        - "history" (list): Updated log of the game history.
+        If the game continues:
+        - "endgame" (bool): False.
+        - "rc" (dict): Updated remaining cards for each team.
+        - "b" (dict): Updated game board.
+        - "spyh" (str): Spymaster's clue and number.
+        - "teamh" (list): The team's guesses and their outcomes.
+
+  """
+
+  #DICT WITH PROMPT COLORS
+  prompt_colors = {
+      "RED": "\033[1;31m",
+      "BLUE": "\033[1;34m",
+      "endcolor": "\033[0m",
+      "n": "\033[1;33m"
+    }
+
+
+  opp = "BLUE" if team == "RED" else "RED"
+  rc = cards_remaining
+  b = board
+  if verbose:
+    print("The actual board is: ")
+    if masterverbose:
+      display(HTML(board4print(master_image_dict)))
+    else:
+      display(HTML(board4print(image_dict)))
+    print(f"it is {prompt_colors[team]}{team}{prompt_colors['endcolor']} team turn: \n")
+
+
+  n_clue_board = 0
+  cib_control = True # Clue in board control variable
+  while cib_control:
+    if master_model == "human":
+      clue = input("Insert a clue for your teammates:")
+      number = input("Insert the number of words related to that clue: ")
+    else:
+      clue, number = spymaster(lang, board, team, history, master_model, cot)
+    spymaster_history = f"Team {team} spymaster said: {clue} ({number})."
+    guesser_history = []
+    if verbose: print(f"The {prompt_colors[team]}{team}{prompt_colors['endcolor']} spymaster's clue is: {clue} ({number}). \n \n")
+
+    if clue in b:
+      if verbose: print(f"{clue} is in the board, try again. \n \n")
+      n_clue_board += 1
+    else:
+        cib_control = False
+
+  n_guessers = len(guesser_model)
+  for _ in range(number):
+    if guesser_model == "human":
+      guess = input("Take your guess")
+    else:
+      ideas = []
+      votes = [{} for _ in range(n_guessers)]
+      want_to_talk = [True for _ in range(n_guessers)]
+      conv = []
+
+      if n_guessers > 1:
+        for j in range(n_guessers):
+          ideas.append(guesser_ideas(lang, team, board, clue, n_guessers, j, cards_remaining, k, history,  guesser_model[j]))
+          if verbose: print(f"Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} guesser {j} thinks: {ideas[j]}.")
+          conv.append(f"Team {team} guesser {j} said: {ideas[j]}.")
+        speaktoomuch = 0
+        while (any(want_to_talk)) and speaktoomuch < 2:
+          if verbose: print(f"Do you want to talk? {want_to_talk}")
+          for j in range(n_guessers):
+            if want_to_talk[j]:
+              mess, want_to_talk[j], votes[j] = guesser(lang, team, board, clue, n_guessers, j, cards_remaining, ideas[j], k, history, conv, guesser_model[j])
+              if verbose: print(f"Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} guesser {j} said: {mess}.")
+              conv.append(f"Team {team} guesser {j} said: {mess}.")
+          speaktoomuch += 1
+        guess = vote_system(votes)
+        if verbose: print(f"{prompt_colors['n']}NARRATOR{prompt_colors['endcolor']}: Team {prompt_colors[team]}{team}{prompt_colors['endcolor']} voted: {guess}. \n \n")
+    
+      elif n_guessers == 1:
+          T, guess = solo_guesser(lang, team, board, clue, cards_remaining, k, history, guesser_model[j], cot_guesser)
+          if cot_guesser and verbose: print(f"{prompt_colors[team]}{team} GUESSER{prompt_colors['endcolor']}: {T}. \n \n")
+          if verbose: print(f"{prompt_colors[team]}{team} GUESSER{prompt_colors['endcolor']}'s guess: {guess}. \n \n")
+      
+
+    try:
+        x = b[guess]
+    except:
+        if verbose: print(f"{prompt_colors[team]}{team}{prompt_colors['endcolor']} team guess wasn't on the board. \n \n")
+        guesser_history.append(f"Team {team} said: {guess}. The word was not in board")
+        return {"endgame": False, "rc": rc, "b": b, "spyh": spymaster_history, "teamh": guesser_history, "cib": n_clue_board}
+
+    image_dict[guess] = master_image_dict[guess]
+    del master_image_dict[guess]
+    if x == "KILLER":
+        if verbose: print(f"The killer word have been selected, the game ends. \n \n ")
+        guesser_history.append(f"Team {team} said: {guess}. The word was {x}.")
+        history.append(spymaster_history)  # Append spymaster_history
+        history.extend(guesser_history)  # Extend with guesser_history
+        return {"endgame": True, "win": opp, "reason": "killer word selected", "history": history, "cib": n_clue_board}
+
+    elif x == team:
+        rc[team] -= 1
+        if verbose: print(f'A {prompt_colors[team]}{team} word{prompt_colors["endcolor"]} have been selected ({team} cards remaining = {rc[team]}). \n \n')
+        del b[guess]
+        guesser_history.append(f"Team {team} said: {guess}. The word was {team}.")
+        if rc[team] == 0:
+            if verbose: print(f"The {prompt_colors[team]}{team} team{prompt_colors['endcolor']} reached the goal, the game ends. \n \n")
+            history.append(spymaster_history)  # Append spymaster_history
+            history.extend(guesser_history)  # Extend with guesser_history
+            return {"endgame": True, "win": team, "reason": "cards finished", "history": history, "cib": n_clue_board}
+
+    elif x == opp:
+        rc[opp] -= 1
+        if verbose: print(f'A {prompt_colors[opp]}{opp} word{prompt_colors["endcolor"]} have been selected ({opp} cards remaining = {rc[opp]}). \n \n')
+        del b[guess]
+        guesser_history.append(f"Team {team} said: {guess}. The word was {opp}.")
+        if rc[opp] == 0:
+            if verbose: print(f"The {prompt_colors[opp]}{opp} team{prompt_colors['endcolor']} reached the goal, the game ends. \n \n")
+            history.append(spymaster_history)  # Append spymaster_history
+            history.extend(guesser_history)  # Extend with guesser_history
+            return {"endgame": True, "win": team, "reason": "cards finished", "history": history, "cib": n_clue_board}
+        break
+
+    else:
+        guesser_history.append(f"Team {team} said: {guess}. The word was neutral.")
+        if verbose: print(f"A neutral word have been selected. \n \n")
+        del b[guess]
+        break
+
+  return {"endgame": False, "rc": rc, "b": b, "spyh": spymaster_history, "teamh": guesser_history, "cib": n_clue_board}
+
+
